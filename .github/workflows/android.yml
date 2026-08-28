@@ -21,18 +21,30 @@ jobs:
 
       - name: Install System Dependencies
         run: |
+          set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get install -y --no-install-recommends \
+            apt-transport-https \
+            ca-certificates \
             build-essential \
             gcc \
             g++ \
             make \
             libc6-dev \
+            libc6-dev-i386 \
             libgcc-12-dev \
             libstdc++-12-dev \
             zlib1g-dev \
+            libbz2-dev \
             libffi-dev \
             libssl-dev \
+            libsqlite3-dev \
+            libreadline-dev \
+            libncurses5-dev \
+            libgdbm-dev \
+            liblzma-dev \
+            tk-dev \
             python3-dev \
             dpkg-dev \
             libtool \
@@ -48,7 +60,10 @@ jobs:
             libsdl2-dev \
             libsdl2-image-dev \
             libsdl2-mixer-dev \
-            libsdl2-ttf-dev
+            libsdl2-ttf-dev \
+            ccache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
       - name: Isolated Build Environment Setup
         run: |
@@ -183,7 +198,17 @@ jobs:
 
             buildozer --build-only --verbose android debug
 
+      - name: Dump hostpython3 config.log files (for debugging)
+        if: always()
+        run: |
+          echo "Searching for config.log files under .buildozer..."
+          set +e
+          find "$GITHUB_WORKSPACE/.buildozer" -type f -name config.log -print -exec sh -c 'echo "==== {} (tail 200) ===="; tail -n 200 "{}" || true; echo "==== end {} ===="' \;
+          echo "Done searching."
+          set -e
+
       - name: Upload Finished APK Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: focusbuddy-shareable-apk
