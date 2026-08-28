@@ -30,6 +30,8 @@ jobs:
             build-essential \
             gcc \
             g++ \
+            gcc-multilib \
+            g++-multilib \
             make \
             libc6-dev \
             libc6-dev-i386 \
@@ -153,16 +155,21 @@ jobs:
           command: |
             set -euo pipefail
 
-            # ensure host compile uses system gcc/g++
+            # force system compiler
             export CC=/usr/bin/gcc
             export CXX=/usr/bin/g++
+
+            # help configure find libraries/headers
+            export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+            export CPPFLAGS="-I/usr/include -I/usr/include/x86_64-linux-gnu ${CPPFLAGS:-}"
+            export LDFLAGS="-L/usr/lib -L/usr/lib/x86_64-linux-gnu ${LDFLAGS:-}"
 
             unset ANDROID_NDK_HOME
             unset ANDROID_NDK_ROOT
             unset ANDROID_NDK
             unset ANDROID_NDK_LATEST_HOME
 
-            # quick sanity-check of the host compiler
+            # quick host compiler sanity-check (prints failure details)
             echo "=== gcc info ==="
             which gcc || true
             gcc --version || true
@@ -171,7 +178,7 @@ jobs:
               echo "Host compiler can create executables: OK"
             else
               echo "Host compiler test failed, dump:"
-              tail -n +1 /tmp/gcc_test_err || true
+              sed -n '1,200p' /tmp/gcc_test_err || true
               ls -l /tmp/test* || true
             fi
             rm -f /tmp/test.c /tmp/test /tmp/gcc_test_err || true
@@ -225,12 +232,29 @@ jobs:
           echo "Done searching."
           set -e
 
+      - name: Collect hostpython3 config log files into artifacts dir
+        if: always()
+        run: |
+          set -euo pipefail
+          ARTDIR="$GITHUB_WORKSPACE/artifacts/hostpython-config-logs"
+          rm -rf "$ARTDIR"
+          mkdir -p "$ARTDIR"
+          # Copy each config.log preserving a relative path under ARTDIR
+          find "$GITHUB_WORKSPACE/.buildozer" -type f -name config.log | while read -r FILE; do
+            RELPATH="${FILE#$GITHUB_WORKSPACE/}"
+            DEST="$ARTDIR/$RELPATH"
+            mkdir -p "$(dirname "$DEST")"
+            cp -a "$FILE" "$DEST"
+          done
+          echo "Collected files:"
+          ls -R "$ARTDIR" || true
+
       - name: Upload hostpython3 config.log artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hostpython-config-logs
-          path: ./.buildozer/**/config.log
+          path: artifacts/hostpython-config-logs
 
       - name: Upload Finished APK Artifact
         if: always()
