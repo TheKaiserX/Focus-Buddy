@@ -1,0 +1,190 @@
+name: Build Android APK
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Unzip Audio Assets
+        run: |
+          unzip assets.zip
+          rm assets.zip
+
+      - name: Setup Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            gcc \
+            g++ \
+            make \
+            libc6-dev \
+            libgcc-12-dev \
+            libstdc++-12-dev \
+            zlib1g-dev \
+            libffi-dev \
+            libssl-dev \
+            python3-dev \
+            dpkg-dev \
+            libtool \
+            libtool-bin \
+            gettext \
+            cmake \
+            ninja-build \
+            autoconf \
+            automake \
+            pkg-config \
+            openjdk-17-jdk \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev
+
+      - name: Isolated Build Environment Setup
+        run: |
+          python -m pip install --user --upgrade \
+            pip==23.3.1 \
+            setuptools==65.5.0 \
+            wheel==0.42.0
+          python -m pip install --user \
+            buildozer \
+            cython==0.29.33 \
+            pillow \
+            plyer
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Clear Buildozer Cache
+        run: |
+          rm -rf ~/.buildozer
+          rm -rf .buildozer
+
+      - name: Prepare pinned python-for-android
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          P4A_DIR="$GITHUB_WORKSPACE/python-for-android"
+          rm -rf "$P4A_DIR"
+
+          git clone \
+            --branch v2026.05.09 \
+            --single-branch \
+            --depth 1 \
+            https://github.com/kivy/python-for-android.git \
+            "$P4A_DIR"
+
+          python3 - "$P4A_DIR" <<'PYEOF'
+          from pathlib import Path
+          import sys
+
+          p4a_dir = Path(sys.argv[1])
+
+          freetype_file = p4a_dir / "pythonforandroid/recipes/freetype/__init__.py"
+          freetype_source = freetype_file.read_text()
+          patched_freetype = freetype_source.replace(
+              "download.savannah.gnu.org",
+              "download-mirror.savannah.gnu.org",
+          )
+          if patched_freetype == freetype_source:
+              raise SystemExit("FreeType patch did not apply")
+          freetype_file.write_text(patched_freetype)
+
+          build_file = p4a_dir / "pythonforandroid/build.py"
+          build_source = build_file.read_text()
+          old_command = "pip install -U pip"
+          new_command = (
+              "PYTHONPATH= python -m ensurepip --upgrade && "
+              "PYTHONPATH= python -m pip install "
+              "--no-cache-dir --force-reinstall pip==24.0"
+          )
+          if old_command not in build_source:
+              raise SystemExit("p4a pip upgrade command was not found")
+          build_file.write_text(build_source.replace(old_command, new_command))
+
+          spec_file = Path("buildozer.spec")
+          spec_source = spec_file.read_text()
+          source_dir_line = "p4a.source_dir = ./python-for-android"
+          if source_dir_line not in spec_source:
+              if "[app]" not in spec_source:
+                  raise SystemExit("[app] section was not found in buildozer.spec")
+              spec_source = spec_source.replace(
+                  "[app]",
+                  "[app]\n" + source_dir_line,
+                  1,
+              )
+              spec_file.write_text(spec_source)
+
+          print("Patched p4a checkout:", p4a_dir)
+          print("Pinned p4a internal pip to 24.0")
+          print("Configured buildozer.spec to use the patched checkout")
+          PYEOF
+
+      - name: Build APK with Buildozer
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 45
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            set -euo pipefail
+
+            unset ANDROID_NDK_HOME
+            unset ANDROID_NDK_ROOT
+            unset ANDROID_NDK
+            unset ANDROID_NDK_LATEST_HOME
+
+            sudo mkdir -p /usr/local/lib/android/sdk/tools/bin
+            sudo ln -sf \
+              /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager \
+              /usr/local/lib/android/sdk/tools/bin/sdkmanager
+            set +o pipefail
+            yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+            sdkmanager_status=${PIPESTATUS[1]}
+            set -o pipefail
+            if [ "$sdkmanager_status" -ne 0 ]; then
+              exit "$sdkmanager_status"
+            fi
+
+            export ANDROID_HOME=/usr/local/lib/android/sdk
+            export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+            export BUILDOZER_ANDROID_SDK_PATH=/usr/local/lib/android/sdk
+            export BUILDOZER_ANDROID_NDK_PATH=/usr/local/lib/android/sdk/ndk/26.3.11579264
+            export BUILDOZER_ACCEPT_SDK_LICENSE=1
+            export CFLAGS="${CFLAGS:-} -Wno-error=incompatible-function-pointer-types -Wno-incompatible-function-pointer-types"
+            export CXXFLAGS="${CXXFLAGS:-} -Wno-error=incompatible-function-pointer-types -Wno-incompatible-function-pointer-types"
+
+            rm -rf \
+              "$GITHUB_WORKSPACE/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv"
+
+            NDK_BIN_DIR="$BUILDOZER_ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin"
+            for compiler in clang clang++; do
+              BIN="$NDK_BIN_DIR/$compiler"
+              REAL="$NDK_BIN_DIR/${compiler}.real"
+              if [ -f "$BIN" ] && [ ! -f "$REAL" ]; then
+                sudo mv "$BIN" "$REAL"
+                if [ "$compiler" = "clang++" ]; then
+                  printf '#!/bin/bash\nexec "%s" "$@" -Wno-incompatible-function-pointer-types -lc++_shared\n' "$REAL" | sudo tee "$BIN" > /dev/null
+                else
+                  printf '#!/bin/bash\nexec "%s" "$@" -Wno-incompatible-function-pointer-types\n' "$REAL" | sudo tee "$BIN" > /dev/null
+                fi
+                sudo chmod +x "$BIN"
+              fi
+            done
+
+            buildozer --build-only --verbose android debug
+
+      - name: Upload Finished APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: focusbuddy-shareable-apk
+          path: bin/*.apk
