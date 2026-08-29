@@ -155,9 +155,11 @@ jobs:
           command: |
             set -euo pipefail
 
-            # force system compiler
+            # force system compiler for host builds
             export CC=/usr/bin/gcc
             export CXX=/usr/bin/g++
+            # disable ccache to avoid wrapper surprises
+            export CCACHE_DISABLE=1
 
             # help configure find libraries/headers
             export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
@@ -200,12 +202,11 @@ jobs:
             export BUILDOZER_ANDROID_SDK_PATH=/usr/local/lib/android/sdk
             export BUILDOZER_ANDROID_NDK_PATH=/usr/local/lib/android/sdk/ndk/26.3.11579264
             export BUILDOZER_ACCEPT_SDK_LICENSE=1
-            export CFLAGS="${CFLAGS:-} -Wno-error=incompatible-function-pointer-types -Wno-incompatible-function-pointer-types"
-            export CXXFLAGS="${CXXFLAGS:-} -Wno-error=incompatible-function-pointer-types -Wno-incompatible-function-pointer-types"
 
             rm -rf \
               "$GITHUB_WORKSPACE/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv"
 
+            # patch NDK clang wrappers (keeps -W flags local to the NDK clang wrapper)
             NDK_BIN_DIR="$BUILDOZER_ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin"
             for compiler in clang clang++; do
               BIN="$NDK_BIN_DIR/$compiler"
