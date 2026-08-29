@@ -1,6 +1,8 @@
 import json
 import os
 import io
+import shutil
+import tempfile
 import colorsys
 from datetime import datetime, date
 from PIL import Image as PILImage
@@ -36,6 +38,7 @@ try:
 except ImportError:
     HAS_PLYER = False
 
+DATA_FILE = "user_data.json"
 AVAILABLE_SOUNDS = [
     ("None", None),
     ("Cicadas", "cicadas.mp3"),
@@ -49,6 +52,20 @@ AVAILABLE_SOUNDS = [
 ]
 
 class AnimatedButton(Button):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.halign = "center"
+        self.valign = "middle"
+        self.padding = [dp(6), dp(4)]
+        self.bind(size=self._update_text_size)
+        self._update_text_size()
+
+    def _update_text_size(self, *args):
+        self.text_size = (
+            max(0, self.width - dp(12)),
+            max(0, self.height - dp(8))
+        )
+
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             anim = Animation(opacity=0.7, d=0.08, t='out_quad')
@@ -71,9 +88,12 @@ class CenteredTextInput(TextInput):
         self.padding = [0, max(0, pad_y), 0, 0]
 
 class ColorPreviewBox(FloatLayout):
-    def __init__(self, initial_color=[1, 1, 1, 1], **kwargs):
+    def __init__(self, initial_color=None, **kwargs):
         super().__init__(**kwargs)
-        self.current_color = initial_color
+        self.current_color = list(
+            initial_color if initial_color is not None
+            else [1, 1, 1, 1]
+        )
         self.bind(pos=self._update_canvas, size=self._update_canvas)
 
     def set_color(self, color_vec):
@@ -141,24 +161,16 @@ class TimerRingDisplay(FloatLayout):
 class FocusBuddyApp(App):
     def build(self):
         self.title = "Focus Buddy"
-
-        # Store user data in Kivy's private app data directory.
-        # Each installation/device gets its own user_data.json.
         self.data_file = os.path.join(
             self.user_data_dir,
-            "user_data.json"
+            DATA_FILE
         )
-
-        self.data_file = os.path.join(
-            self.user_data_dir,
-            "user_data.json"
-        )
-
         self.selected_seconds = 0
         self.timer_seconds = 0
         self.timer_running = False
+        self.timer_paused_by_shield = False
         self.shield_enabled = True
-        self.is_face_down = False
+        self.is_face_down = None
         self.interrupted_popup = None
         
         self.is_on_break = False
@@ -178,6 +190,13 @@ class FocusBuddyApp(App):
         self.check_streak_decay()
         
         self.root_layout = FloatLayout()
+        self._bg_color_instruction = None
+        self._bg_rect = None
+        self.root_layout.bind(
+            pos=self._update_background_rect,
+            size=self._update_background_rect
+        )
+
         self.bg_image = Image(fit_mode="fill", size_hint=(1, 1), pos_hint={'x': 0, 'y': 0})
         self.root_layout.add_widget(self.bg_image)
         
@@ -264,9 +283,19 @@ class FocusBuddyApp(App):
             "total_minutes": 0, "sessions_completed": 0, "history": [],
             "theme": default_theme
         }
-        if os.path.exists(self.data_file):
+        data_path = self.data_file
+
+        # Preserve data created by older builds that stored the file beside
+        # the script instead of inside Kivy's per-app data directory.
+        if (
+            not os.path.exists(data_path)
+            and os.path.exists(DATA_FILE)
+        ):
+            data_path = DATA_FILE
+
+        if os.path.exists(data_path):
             try:
-                with open(self.data_file, "r") as f:
+                with open(data_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 data.setdefault("exp", 0)
                 data.setdefault("streak", 0)
@@ -280,14 +309,55 @@ class FocusBuddyApp(App):
                 else:
                     for k, v in default_theme.items():
                         data["theme"].setdefault(k, v)
+                if data_path != self.data_file:
+                    try:
+                        os.makedirs(
+                            os.path.dirname(self.data_file),
+                            exist_ok=True
+                        )
+                        shutil.copy2(
+                            data_path,
+                            self.data_file
+                        )
+                    except OSError as exc:
+                        print(
+                            f"Could not migrate user data: {exc}"
+                        )
+
                 return data
             except Exception:
                 return default
         return default
 
     def save_user_data(self):
-        with open(self.data_file, "w") as f:
-            json.dump(self.user_data, f)
+        """Persist settings safely without leaving a half-written JSON file."""
+        data_dir = os.path.dirname(self.data_file)
+        os.makedirs(data_dir, exist_ok=True)
+
+        fd, temp_path = tempfile.mkstemp(
+            prefix=".user_data_",
+            suffix=".tmp",
+            dir=data_dir
+        )
+
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(
+                    self.user_data,
+                    f,
+                    ensure_ascii=False,
+                    indent=2
+                )
+                f.flush()
+                os.fsync(f.fileno())
+
+            os.replace(temp_path, self.data_file)
+        except OSError as exc:
+            print(f"Could not save user data: {exc}")
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
 
 
     def load_safe_texture(self, file_path):
@@ -308,6 +378,12 @@ class FocusBuddyApp(App):
 
         except Exception:
             return None
+
+
+    def _update_background_rect(self, *args):
+        if self._bg_rect is not None:
+            self._bg_rect.pos = self.root_layout.pos
+            self._bg_rect.size = self.root_layout.size
 
 
     def apply_saved_theme(self):
@@ -354,10 +430,14 @@ class FocusBuddyApp(App):
 
             if safe_tex:
                 self.bg_image.texture = safe_tex
+                self.bg_image.source = ""
                 self.bg_image.opacity = 1
+                self.bg_image.canvas.ask_update()
             else:
+                self.bg_image.texture = None
                 self.bg_image.opacity = 0
         else:
+            self.bg_image.texture = None
             self.bg_image.opacity = 0
 
         bg_c = theme.get(
@@ -365,12 +445,16 @@ class FocusBuddyApp(App):
             [0.12, 0.14, 0.18, 1]
         )
 
-        with self.root_layout.canvas.before:
-            Color(*bg_c)
-            Rectangle(
-                pos=self.root_layout.pos,
-                size=(800, 1280)
-            )
+        if self._bg_color_instruction is None:
+            with self.root_layout.canvas.before:
+                self._bg_color_instruction = Color(*bg_c)
+                self._bg_rect = Rectangle(
+                    pos=self.root_layout.pos,
+                    size=self.root_layout.size
+                )
+        else:
+            self._bg_color_instruction.rgba = bg_c
+            self._update_background_rect()
 
 
     def get_level_info(self):
@@ -600,9 +684,9 @@ class FocusBuddyApp(App):
             Color(0.12, 0.14, 0.18, 0.98)
 
             self.rect = RoundedRectangle(
-                size=(310, 160),
+                size=(dp(340), dp(220)),
                 pos=(0, 0),
-                radius=[16]
+                radius=[dp(16)]
             )
 
             Color(0.9, 0.25, 0.25, 1)
@@ -611,11 +695,11 @@ class FocusBuddyApp(App):
                 rounded_rectangle=(
                     0,
                     0,
-                    310,
-                    160,
-                    16
+                    dp(340),
+                    dp(220),
+                    dp(16)
                 ),
-                width=1.5
+                width=dp(1.5)
             )
 
         def update_rect(instance, value):
@@ -626,7 +710,7 @@ class FocusBuddyApp(App):
                 instance.y,
                 instance.width,
                 instance.height,
-                16
+                dp(16)
             )
 
         content.bind(
@@ -636,33 +720,57 @@ class FocusBuddyApp(App):
 
         card_box = BoxLayout(
             orientation="vertical",
-            padding=15,
-            spacing=8
+            padding=[dp(18), dp(14)],
+            spacing=dp(7)
         )
 
         icon_label = Label(
-            text="📳",
-            font_size="28sp",
-            size_hint_y=0.3
+            text="!",
+            font_size="26sp",
+            bold=True,
+            color=[1, 0.35, 0.35, 1],
+            size_hint_y=None,
+            height=dp(32)
         )
 
         title_label = Label(
-            text="Session Interrupted",
-            font_size="20sp",
+            text="Focus Shield Paused",
+            font_size="18sp",
             bold=True,
             color=[1, 1, 1, 1],
-            size_hint_y=0.3
+            halign="center",
+            valign="middle",
+            size_hint_y=None,
+            height=dp(34)
         )
 
         desc_label = Label(
             text=(
-                "Place phone face-down to continue\n"
-                "and keep focus active."
+                "The timer is paused while your phone is face-up.\n"
+                "Turn it face-down to continue."
             ),
             font_size="13sp",
             halign="center",
+            valign="middle",
             color=[0.8, 0.8, 0.85, 1],
-            size_hint_y=0.4
+            size_hint_y=None,
+            height=dp(58)
+        )
+
+        title_label.bind(
+            width=lambda instance, value: setattr(
+                instance,
+                "text_size",
+                (value, None)
+            )
+        )
+
+        desc_label.bind(
+            width=lambda instance, value: setattr(
+                instance,
+                "text_size",
+                (value, None)
+            )
         )
 
         card_box.add_widget(icon_label)
@@ -676,8 +784,8 @@ class FocusBuddyApp(App):
             title="",
             separator_height=0,
             content=content,
-            size_hint=(None, None),
-            size=(310, 160),
+            size_hint=(0.9, None),
+            height=dp(220),
             auto_dismiss=False,
             background=""
         )
@@ -736,11 +844,21 @@ class FocusBuddyApp(App):
 
     def set_face_down_state(self, is_down):
         if self.is_face_down == is_down:
+            if (
+                not is_down
+                and self.timer_running
+                and self.shield_enabled
+                and not self.is_on_break
+                and not self.timer_paused_by_shield
+            ):
+                self.timer_paused_by_shield = True
+                self.show_interrupted_popup()
             return
 
         self.is_face_down = is_down
 
         if self.is_face_down:
+            self.timer_paused_by_shield = False
             self.dismiss_interrupted_popup()
             self.play_all_sounds()
 
@@ -750,6 +868,7 @@ class FocusBuddyApp(App):
                 and self.shield_enabled
                 and not self.is_on_break
             ):
+                self.timer_paused_by_shield = True
                 self.show_interrupted_popup()
 
             self.stop_all_sounds()
@@ -1051,7 +1170,6 @@ class FocusBuddyApp(App):
         if not self.timer_running:
             if self.timer_seconds > 0:
                 self.request_dnd_permission()
-                self.open_security_settings()
 
                 self.timer_running = True
                 self.action_btn.text = "Pause Session"
@@ -1066,6 +1184,7 @@ class FocusBuddyApp(App):
 
         else:
             self.timer_running = False
+            self.timer_paused_by_shield = False
             self.action_btn.text = "Resume Session"
 
             self.set_native_dnd(False)
@@ -1079,6 +1198,9 @@ class FocusBuddyApp(App):
 
 
     def update_timer(self, dt):
+        if self.timer_paused_by_shield:
+            return
+
         if self.timer_seconds > 0:
             self.timer_seconds -= 1
             self.update_timer_label(
@@ -1091,6 +1213,7 @@ class FocusBuddyApp(App):
             )
 
             self.timer_running = False
+            self.timer_paused_by_shield = False
             self.action_btn.text = "Start Session"
 
             self.set_native_dnd(False)
@@ -1309,6 +1432,7 @@ class FocusBuddyApp(App):
 
         else:
             self.shield_btn.text = "Shield: OFF"
+            self.timer_paused_by_shield = False
             self.shield_btn.background_color = [
                 0.4,
                 0.4,
@@ -1317,6 +1441,21 @@ class FocusBuddyApp(App):
             ]
 
         self.dismiss_interrupted_popup()
+
+        if (
+            not self.shield_enabled
+            and self.timer_running
+            and not self.is_on_break
+        ):
+            self.play_all_sounds()
+        elif (
+            self.shield_enabled
+            and self.timer_running
+            and not self.is_face_down
+            and not self.is_on_break
+        ):
+            self.timer_paused_by_shield = True
+            self.show_interrupted_popup()
 
 
     def get_stats_text(self):
@@ -1762,12 +1901,26 @@ class FocusBuddyApp(App):
         if selection and len(selection) > 0:
             image_path = selection[0]
 
-            if os.path.exists(image_path):
-                self.user_data["theme"]["bg_type"] = "image"
-                self.user_data["theme"]["bg_path"] = image_path
+            if os.path.isfile(image_path):
+                # Plyer callbacks may arrive off the Kivy UI thread. Schedule
+                # the widget and texture updates on the main thread so the
+                # new background appears immediately.
+                Clock.schedule_once(
+                    lambda dt: self._apply_selected_background(
+                        image_path
+                    ),
+                    0
+                )
 
-                self.apply_saved_theme()
-                self.save_user_data()
+
+    def _apply_selected_background(self, image_path):
+        if os.path.isfile(image_path):
+            self.user_data["theme"]["bg_type"] = "image"
+            self.user_data["theme"]["bg_path"] = image_path
+
+            self.apply_saved_theme()
+            self.bg_image.canvas.ask_update()
+            self.save_user_data()
 
 
     def show_visual_image_picker(self):
