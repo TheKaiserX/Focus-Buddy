@@ -51,6 +51,35 @@ AVAILABLE_SOUNDS = [
     ("Underwater", "underwater.mp3")
 ]
 
+LEVEL_TITLES = [
+    (50, "Focus Legend"),
+    (20, "Flow Master"),
+    (10, "Focus Guardian"),
+    (5, "Deep Worker"),
+    (2, "Steady"),
+    (1, "Beginner")
+]
+
+LEVEL_REWARDS = {
+    2: "Steady theme",
+    3: "New ambient sound",
+    5: "Session presets",
+    7: "New timer-ring style",
+    10: "Shield-mode theme",
+    15: "Advanced stats",
+    20: "Flow Master theme",
+    50: "Focus Legend badge"
+}
+
+ACHIEVEMENT_DEFINITIONS = [
+    ("First Focus", "Complete your first session"),
+    ("One Hour", "Complete a 60-minute session"),
+    ("Five Hour Club", "Reach 5 total focused hours"),
+    ("Getting Consistent", "Build a 3-day streak"),
+    ("Ten Sessions", "Complete 10 sessions"),
+    ("Shielded Focus", "Complete a session with Shield Mode")
+]
+
 class AnimatedButton(Button):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -462,6 +491,96 @@ class FocusBuddyApp(App):
         current_level_exp = self.user_data["exp"] % 100
 
         return level, current_level_exp
+
+
+    def get_level_title(self, level):
+        for required_level, title in LEVEL_TITLES:
+            if level >= required_level:
+                return title
+
+        return "Beginner"
+
+
+    def get_next_level_reward(self, level):
+        for required_level in sorted(LEVEL_REWARDS):
+            if required_level > level:
+                return LEVEL_REWARDS[required_level]
+
+        return "All current rewards unlocked"
+
+
+    def get_progress_card_text(self):
+        level, current_exp = self.get_level_info()
+        title = self.get_level_title(level)
+        next_reward = self.get_next_level_reward(level)
+
+        bar_width = 18
+        filled = round(
+            (current_exp / 100) * bar_width
+        )
+        progress_bar = (
+            "#" * filled
+            + "-" * (bar_width - filled)
+        )
+
+        return (
+            f"{title}  •  Level {level}\n"
+            f"[{progress_bar}]  {current_exp}/100 XP\n"
+            f"Next reward: {next_reward}"
+        )
+
+
+    def get_achievement_text(self):
+        history = self.user_data.get("history", [])
+        if not isinstance(history, list):
+            history = []
+
+        total_minutes = self.user_data.get(
+            "total_minutes",
+            0
+        )
+        sessions = self.user_data.get(
+            "sessions_completed",
+            0
+        )
+        streak = self.user_data.get("streak", 0)
+
+        checks = [
+            sessions >= 1,
+            any(
+                item.get("mins", 0) >= 60
+                for item in history
+                if isinstance(item, dict)
+            ),
+            total_minutes >= 300,
+            streak >= 3,
+            sessions >= 10,
+            any(
+                item.get("shield", False)
+                for item in history
+                if isinstance(item, dict)
+            )
+        ]
+
+        unlocked_names = [
+            definition[0]
+            for definition, unlocked in zip(
+                ACHIEVEMENT_DEFINITIONS,
+                checks
+            )
+            if unlocked
+        ]
+
+        if unlocked_names:
+            unlocked_text = " • ".join(unlocked_names)
+        else:
+            unlocked_text = "Complete a session to unlock your first badge"
+
+        return (
+            f"Achievements: {len(unlocked_names)}/"
+            f"{len(ACHIEVEMENT_DEFINITIONS)}\n"
+            f"Unlocked: {unlocked_text}"
+        )
 
 
     def check_streak_decay(self):
@@ -1264,7 +1383,8 @@ class FocusBuddyApp(App):
                         ", ".join(audio_used)
                         if audio_used
                         else None
-                    )
+                    ),
+                    "shield": self.shield_enabled
                 }
             )
 
@@ -1475,6 +1595,16 @@ class FocusBuddyApp(App):
         self.history_grid.clear_widgets()
         self.stats_summary.text = self.get_stats_text()
 
+        if hasattr(self, "progress_card"):
+            self.progress_card.text = (
+                self.get_progress_card_text()
+            )
+
+        if hasattr(self, "achievements_label"):
+            self.achievements_label.text = (
+                self.get_achievement_text()
+            )
+
         history_list = self.user_data.get(
             "history",
             []
@@ -1613,16 +1743,35 @@ class FocusBuddyApp(App):
         self.stats_summary.text = (
             self.get_stats_text()
         )
+        self.stats_summary.size_hint_y = 0.12
 
         layout.add_widget(
             self.stats_summary
+        )
+
+        self.progress_card = Label(
+            text=self.get_progress_card_text(),
+            font_size="11sp",
+            bold=True,
+            halign="left",
+            valign="middle",
+            color=[0.9, 0.95, 1, 1],
+            size_hint_y=0.17
+        )
+
+        self.progress_card.bind(
+            size=self.progress_card.setter("text_size")
+        )
+
+        layout.add_widget(
+            self.progress_card
         )
 
         custom_modal_btn = AnimatedButton(
             text="🎨 Theme & Colors Customizer",
             font_size="12sp",
             bold=True,
-            size_hint_y=0.1,
+            size_hint_y=0.08,
             background_color=[0.2, 0.6, 0.9, 1]
         )
 
@@ -1634,17 +1783,36 @@ class FocusBuddyApp(App):
             custom_modal_btn
         )
 
+        self.achievements_label = Label(
+            text=self.get_achievement_text(),
+            font_size="10sp",
+            halign="left",
+            valign="middle",
+            color=[0.8, 0.85, 0.9, 1],
+            size_hint_y=0.16
+        )
+
+        self.achievements_label.bind(
+            size=self.achievements_label.setter(
+                "text_size"
+            )
+        )
+
+        layout.add_widget(
+            self.achievements_label
+        )
+
         log_title = Label(
             text="📜 Recent Session Logs",
             font_size="13sp",
             bold=True,
-            size_hint_y=0.08
+            size_hint_y=0.07
         )
 
         layout.add_widget(log_title)
 
         self.history_scroll = ScrollView(
-            size_hint_y=0.62
+            size_hint_y=0.4
         )
 
         self.history_grid.bind(
