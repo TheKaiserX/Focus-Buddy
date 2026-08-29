@@ -149,27 +149,35 @@ jobs:
       - name: Build APK with Buildozer
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 45
+          timeout_minutes: 60
           max_attempts: 3
           retry_wait_seconds: 30
           command: |
             set -euo pipefail
 
-            # force system compiler for host builds
+            # Use system host compiler for host builds
             export CC=/usr/bin/gcc
             export CXX=/usr/bin/g++
-            # disable ccache to avoid wrapper surprises
+
+            # Disable ccache wrappers for both host and ndk clang invocation
+            export USE_CCACHE=0
             export CCACHE_DISABLE=1
 
-            # help configure find libraries/headers
-            export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-            export CPPFLAGS="-I/usr/include -I/usr/include/x86_64-linux-gnu ${CPPFLAGS:-}"
-            export LDFLAGS="-L/usr/lib -L/usr/lib/x86_64-linux-gnu ${LDFLAGS:-}"
+            # Explicitly point to the NDK so p4a uses the correct sysroot
+            export ANDROID_NDK_HOME=/usr/local/lib/android/sdk/ndk/26.3.11579264
+            export ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/26.3.11579264
 
-            unset ANDROID_NDK_HOME
-            unset ANDROID_NDK_ROOT
-            unset ANDROID_NDK
+            # Ensure Gradle/Android Gradle Plugin runs with Java 17
+            export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+            export PATH="$JAVA_HOME/bin:$PATH"
+
+            # Help configure/link tests find NDK sysroot headers & android libs (math/zlib)
+            export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+            export CPPFLAGS="${CPPFLAGS:-} -I/usr/include -I/usr/include/x86_64-linux-gnu -I${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include"
+            export LDFLAGS="${LDFLAGS:-} -L${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24 -lm -lz"
+
             unset ANDROID_NDK_LATEST_HOME
+            unset ANDROID_NDK
 
             # quick host compiler sanity-check (prints failure details)
             echo "=== gcc info ==="
@@ -200,13 +208,13 @@ jobs:
             export ANDROID_HOME=/usr/local/lib/android/sdk
             export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
             export BUILDOZER_ANDROID_SDK_PATH=/usr/local/lib/android/sdk
-            export BUILDOZER_ANDROID_NDK_PATH=/usr/local/lib/android/sdk/ndk/26.3.11579264
+            export BUILDOZER_ANDROID_NDK_PATH=${ANDROID_NDK_ROOT}
             export BUILDOZER_ACCEPT_SDK_LICENSE=1
 
             rm -rf \
               "$GITHUB_WORKSPACE/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv"
 
-            # patch NDK clang wrappers (keeps -W flags local to the NDK clang wrapper)
+            # Patch NDK clang wrappers so the -W suppression flags are applied only to the NDK clang wrapper
             NDK_BIN_DIR="$BUILDOZER_ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin"
             for compiler in clang clang++; do
               BIN="$NDK_BIN_DIR/$compiler"
