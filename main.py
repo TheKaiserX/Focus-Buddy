@@ -164,11 +164,14 @@ THEME_BY_ID = {theme["id"]: theme for theme in UI_THEMES}
 class AnimatedButton(Button):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if "background_color" not in kwargs:
+            self.background_color = [0.16, 0.40, 0.68, 1]
         self.halign = "center"
         self.valign = "middle"
         self.padding = [dp(6), dp(4)]
         self.background_normal = ""
         self.background_down = ""
+        self.background_disabled_normal = ""
         self._button_border = [0.55, 0.60, 0.70, 0.65]
         self.bind(
             size=self._update_text_size,
@@ -607,9 +610,13 @@ class FocusBuddyApp(App):
         if widget is None:
             return
 
+        surface_color = list(color)
+        # Keep the user's wallpaper visible through the app surface.
+        if len(surface_color) > 3:
+            surface_color[3] = min(surface_color[3], 0.58)
         widget.canvas.before.clear()
         with widget.canvas.before:
-            Color(*color)
+            Color(*surface_color)
             RoundedRectangle(
                 pos=widget.pos,
                 size=widget.size,
@@ -642,6 +649,11 @@ class FocusBuddyApp(App):
                 widget.cursor_color = palette["primary"]
             elif isinstance(widget, Label):
                 widget.color = palette["text"]
+            elif widget.__class__.__name__ == "TabbedPanelContent":
+                if hasattr(widget, "background_normal"):
+                    widget.background_normal = ""
+                if hasattr(widget, "background_color"):
+                    widget.background_color = [0, 0, 0, 0]
 
         # The standard Kivy tab headers use a texture by default. Removing it
         # lets the selected/unselected colors read as part of the theme.
@@ -651,7 +663,7 @@ class FocusBuddyApp(App):
             tab.background_color = palette["card"]
             tab.color = palette["text"]
 
-        self.panel.background_color = palette["surface"]
+        self.panel.background_color = [0, 0, 0, 0]
         self._paint_surface(
             getattr(self, "focus_layout", None),
             palette["surface"],
@@ -966,14 +978,18 @@ class FocusBuddyApp(App):
             return
 
         palette = self.get_active_palette()
-        content = FloatLayout()
+        content = BoxLayout(
+            orientation="vertical",
+            padding=[dp(18), dp(14)],
+            spacing=dp(7)
+        )
 
         with content.canvas.before:
             Color(*palette["surface"])
 
             self.rect = RoundedRectangle(
-                size=(dp(340), dp(220)),
-                pos=(0, 0),
+                pos=content.pos,
+                size=content.size,
                 radius=[dp(16)]
             )
 
@@ -981,10 +997,10 @@ class FocusBuddyApp(App):
 
             self.border = Line(
                 rounded_rectangle=(
-                    0,
-                    0,
-                    dp(340),
-                    dp(220),
+                    content.x,
+                    content.y,
+                    content.width,
+                    content.height,
                     dp(16)
                 ),
                 width=dp(1.5)
@@ -1004,12 +1020,6 @@ class FocusBuddyApp(App):
         content.bind(
             pos=update_rect,
             size=update_rect
-        )
-
-        card_box = BoxLayout(
-            orientation="vertical",
-            padding=[dp(18), dp(14)],
-            spacing=dp(7)
         )
 
         icon_label = Label(
@@ -1061,11 +1071,9 @@ class FocusBuddyApp(App):
             )
         )
 
-        card_box.add_widget(icon_label)
-        card_box.add_widget(title_label)
-        card_box.add_widget(desc_label)
-
-        content.add_widget(card_box)
+        content.add_widget(icon_label)
+        content.add_widget(title_label)
+        content.add_widget(desc_label)
         content.opacity = 0
 
         self.interrupted_popup = Popup(
@@ -2083,9 +2091,15 @@ class FocusBuddyApp(App):
             halign="left",
             valign="middle",
             size_hint_y=None,
-            height=dp(34)
+            height=dp(52)
         )
-        theme_hint.bind(size=theme_hint.setter("text_size"))
+        theme_hint.bind(
+            width=lambda label, value: setattr(
+                label,
+                "text_size",
+                (value, None)
+            )
+        )
         content.add_widget(theme_hint)
 
         theme_grid = GridLayout(
@@ -2331,10 +2345,20 @@ class FocusBuddyApp(App):
             font_size="11sp",
             bold=True
         )
+        btn_gallery.set_theme_style(
+            self.get_active_palette()["button"],
+            self.get_active_palette()["button_text"],
+            self.get_active_palette()["border"]
+        )
 
         btn_clear_bg = AnimatedButton(
             text="Use Theme Color",
             font_size="11sp"
+        )
+        btn_clear_bg.set_theme_style(
+            self.get_active_palette()["button"],
+            self.get_active_palette()["button_text"],
+            self.get_active_palette()["border"]
         )
 
         def choose_custom_bg(inst):
