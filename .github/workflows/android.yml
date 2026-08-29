@@ -223,6 +223,21 @@ jobs:
 
             buildozer --build-only --verbose android debug
 
+      - name: Print failing hostpython3 configure section
+        if: always()
+        run: |
+          FILE="$GITHUB_WORKSPACE/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/config.log"
+          echo "Looking for: $FILE"
+          if [ -f "$FILE" ]; then
+            echo "==== printing around 'checking whether the C compiler works' in hostpython3 config.log ===="
+            sed -n '/checking whether the C compiler works/,+400p' "$FILE" || true
+            echo "==== end of printed section ===="
+          else
+            echo "config.log not found at $FILE"
+            echo "Listing all config.log paths under .buildozer (to help locate the correct file):"
+            find "$GITHUB_WORKSPACE/.buildozer" -type f -name config.log -print || true
+          fi
+
       - name: Dump hostpython3 config.log files (for debugging)
         if: always()
         run: |
