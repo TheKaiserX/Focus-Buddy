@@ -159,22 +159,22 @@ jobs:
             export CC=/usr/bin/gcc
             export CXX=/usr/bin/g++
 
-            # Disable ccache wrappers for both host and ndk clang invocation
+            # Disable ccache wrappers
             export USE_CCACHE=0
             export CCACHE_DISABLE=1
 
-            # Explicitly point to the NDK so p4a uses the correct sysroot
+            # Point to NDK for python-for-android / buildozer (do not add NDK sysroot to global CPPFLAGS/LDFLAGS)
             export ANDROID_NDK_HOME=/usr/local/lib/android/sdk/ndk/26.3.11579264
             export ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/26.3.11579264
 
-            # Ensure Gradle/Android Gradle Plugin runs with Java 17
+            # Ensure Gradle runs with Java 17
             export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
             export PATH="$JAVA_HOME/bin:$PATH"
 
-            # Help configure/link tests find NDK sysroot headers & android libs (math/zlib)
+            # Helpful host-side pkg-config / flags (DO NOT add NDK sysroot include or link paths here)
             export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-            export CPPFLAGS="${CPPFLAGS:-} -I/usr/include -I/usr/include/x86_64-linux-gnu -I${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include"
-            export LDFLAGS="${LDFLAGS:-} -L${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24 -lm -lz"
+            export CPPFLAGS="${CPPFLAGS:-} -I/usr/include -I/usr/include/x86_64-linux-gnu"
+            export LDFLAGS="${LDFLAGS:-} -L/usr/lib -L/usr/lib/x86_64-linux-gnu"
 
             unset ANDROID_NDK_LATEST_HOME
             unset ANDROID_NDK
@@ -214,7 +214,7 @@ jobs:
             rm -rf \
               "$GITHUB_WORKSPACE/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv"
 
-            # Patch NDK clang wrappers so the -W suppression flags are applied only to the NDK clang wrapper
+            # Patch NDK clang wrappers so -W suppression flags are applied only to NDK clang wrapper
             NDK_BIN_DIR="$BUILDOZER_ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin"
             for compiler in clang clang++; do
               BIN="$NDK_BIN_DIR/$compiler"
