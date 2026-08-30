@@ -149,25 +149,35 @@ jobs:
       - name: Build APK with Buildozer
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 45
+          timeout_minutes: 60
           max_attempts: 3
           retry_wait_seconds: 30
           command: |
             set -euo pipefail
 
-            # force system compiler
+            # Use system host compiler for host builds
             export CC=/usr/bin/gcc
             export CXX=/usr/bin/g++
 
-            # help configure find libraries/headers
-            export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-            export CPPFLAGS="-I/usr/include -I/usr/include/x86_64-linux-gnu ${CPPFLAGS:-}"
-            export LDFLAGS="-L/usr/lib -L/usr/lib/x86_64-linux-gnu ${LDFLAGS:-}"
+            # Disable ccache wrappers
+            export USE_CCACHE=0
+            export CCACHE_DISABLE=1
 
-            unset ANDROID_NDK_HOME
-            unset ANDROID_NDK_ROOT
-            unset ANDROID_NDK
+            # Point to NDK for python-for-android / buildozer (do not add NDK sysroot to global CPPFLAGS/LDFLAGS)
+            export ANDROID_NDK_HOME=/usr/local/lib/android/sdk/ndk/26.3.11579264
+            export ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/26.3.11579264
+
+            # Ensure Gradle runs with Java 17
+            export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+            export PATH="$JAVA_HOME/bin:$PATH"
+
+            # Helpful host-side pkg-config / flags (DO NOT add NDK sysroot include or link paths here)
+            export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+            export CPPFLAGS="${CPPFLAGS:-} -I/usr/include -I/usr/include/x86_64-linux-gnu"
+            export LDFLAGS="${LDFLAGS:-} -L/usr/lib -L/usr/lib/x86_64-linux-gnu"
+
             unset ANDROID_NDK_LATEST_HOME
+            unset ANDROID_NDK
 
             # quick host compiler sanity-check (prints failure details)
             echo "=== gcc info ==="
@@ -198,14 +208,13 @@ jobs:
             export ANDROID_HOME=/usr/local/lib/android/sdk
             export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
             export BUILDOZER_ANDROID_SDK_PATH=/usr/local/lib/android/sdk
-            export BUILDOZER_ANDROID_NDK_PATH=/usr/local/lib/android/sdk/ndk/26.3.11579264
+            export BUILDOZER_ANDROID_NDK_PATH=${ANDROID_NDK_ROOT}
             export BUILDOZER_ACCEPT_SDK_LICENSE=1
-            export CFLAGS="${CFLAGS:-} -Wno-error=incompatible-function-pointer-types -Wno-incompatible-function-pointer-types"
-            export CXXFLAGS="${CXXFLAGS:-} -Wno-error=incompatible-function-pointer-types -Wno-incompatible-function-pointer-types"
 
             rm -rf \
               "$GITHUB_WORKSPACE/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/venv"
 
+            # Patch NDK clang wrappers so -W suppression flags are applied only to NDK clang wrapper
             NDK_BIN_DIR="$BUILDOZER_ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin"
             for compiler in clang clang++; do
               BIN="$NDK_BIN_DIR/$compiler"
@@ -222,6 +231,21 @@ jobs:
             done
 
             buildozer --build-only --verbose android debug
+
+      - name: Print failing hostpython3 configure section
+        if: always()
+        run: |
+          FILE="$GITHUB_WORKSPACE/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/config.log"
+          echo "Looking for: $FILE"
+          if [ -f "$FILE" ]; then
+            echo "==== printing around 'checking whether the C compiler works' in hostpython3 config.log ===="
+            sed -n '/checking whether the C compiler works/,+400p' "$FILE" || true
+            echo "==== end of printed section ===="
+          else
+            echo "config.log not found at $FILE"
+            echo "Listing all config.log paths under .buildozer (to help locate the correct file):"
+            find "$GITHUB_WORKSPACE/.buildozer" -type f -name config.log -print || true
+          fi
 
       - name: Dump hostpython3 config.log files (for debugging)
         if: always()
