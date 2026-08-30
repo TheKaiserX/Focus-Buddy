@@ -51,20 +51,171 @@ AVAILABLE_SOUNDS = [
     ("Underwater", "underwater.mp3")
 ]
 
+# Themes are progression rewards, not wallpapers.  Each one changes the
+# app's visual language (palette, surfaces, borders, and button treatment).
+UI_THEMES = [
+    {
+        "id": "classic",
+        "name": "Focus Classic",
+        "description": "A calm, balanced workspace",
+        "unlock_exp": 0,
+        "primary": [0.20, 0.60, 1.00, 1],
+        "text": [0.94, 0.97, 1.00, 1],
+        "muted": [0.64, 0.70, 0.80, 1],
+        "background": [0.07, 0.09, 0.14, 1],
+        "surface": [0.10, 0.13, 0.20, 0.96],
+        "card": [0.14, 0.18, 0.27, 0.92],
+        "button": [0.16, 0.40, 0.68, 1],
+        "button_down": [0.11, 0.28, 0.50, 1],
+        "button_text": [1.00, 1.00, 1.00, 1],
+        "border": [0.29, 0.65, 1.00, 0.70],
+        "ring_track": [0.18, 0.23, 0.33, 1],
+    },
+    {
+        "id": "ocean",
+        "name": "Deep Ocean",
+        "description": "Cool teal focus with glassy surfaces",
+        "unlock_exp": 100,
+        "primary": [0.12, 0.86, 0.78, 1],
+        "text": [0.88, 1.00, 0.98, 1],
+        "muted": [0.48, 0.76, 0.75, 1],
+        "background": [0.025, 0.10, 0.13, 1],
+        "surface": [0.035, 0.16, 0.19, 0.96],
+        "card": [0.05, 0.23, 0.26, 0.92],
+        "button": [0.04, 0.52, 0.52, 1],
+        "button_down": [0.03, 0.35, 0.37, 1],
+        "button_text": [0.94, 1.00, 0.98, 1],
+        "border": [0.16, 0.92, 0.84, 0.70],
+        "ring_track": [0.10, 0.29, 0.30, 1],
+    },
+    {
+        "id": "forest",
+        "name": "Quiet Forest",
+        "description": "Earthy greens for a grounded session",
+        "unlock_exp": 250,
+        "primary": [0.45, 0.86, 0.38, 1],
+        "text": [0.94, 1.00, 0.91, 1],
+        "muted": [0.64, 0.78, 0.62, 1],
+        "background": [0.06, 0.11, 0.08, 1],
+        "surface": [0.09, 0.17, 0.12, 0.97],
+        "card": [0.14, 0.24, 0.16, 0.94],
+        "button": [0.22, 0.53, 0.27, 1],
+        "button_down": [0.15, 0.37, 0.19, 1],
+        "button_text": [0.96, 1.00, 0.93, 1],
+        "border": [0.50, 0.92, 0.42, 0.70],
+        "ring_track": [0.18, 0.32, 0.21, 1],
+    },
+    {
+        "id": "sunset",
+        "name": "Sunset Studio",
+        "description": "Warm coral accents for creative momentum",
+        "unlock_exp": 500,
+        "primary": [1.00, 0.42, 0.28, 1],
+        "text": [1.00, 0.95, 0.91, 1],
+        "muted": [0.82, 0.66, 0.60, 1],
+        "background": [0.15, 0.07, 0.08, 1],
+        "surface": [0.22, 0.10, 0.11, 0.97],
+        "card": [0.31, 0.14, 0.13, 0.94],
+        "button": [0.72, 0.24, 0.20, 1],
+        "button_down": [0.51, 0.15, 0.14, 1],
+        "button_text": [1.00, 0.96, 0.92, 1],
+        "border": [1.00, 0.48, 0.30, 0.70],
+        "ring_track": [0.40, 0.18, 0.17, 1],
+    },
+    {
+        "id": "neon",
+        "name": "Neon Pulse",
+        "description": "Electric contrast for high-energy focus",
+        "unlock_exp": 800,
+        "primary": [0.92, 0.20, 1.00, 1],
+        "text": [0.98, 0.95, 1.00, 1],
+        "muted": [0.72, 0.58, 0.82, 1],
+        "background": [0.06, 0.025, 0.10, 1],
+        "surface": [0.12, 0.04, 0.18, 0.98],
+        "card": [0.20, 0.06, 0.27, 0.94],
+        "button": [0.52, 0.12, 0.62, 1],
+        "button_down": [0.35, 0.07, 0.44, 1],
+        "button_text": [1.00, 0.95, 1.00, 1],
+        "border": [0.96, 0.28, 1.00, 0.78],
+        "ring_track": [0.31, 0.12, 0.38, 1],
+    },
+    {
+        "id": "lavender",
+        "name": "Lavender Air",
+        "description": "Soft violet clarity for gentle consistency",
+        "unlock_exp": 1200,
+        "primary": [0.68, 0.50, 1.00, 1],
+        "text": [0.97, 0.95, 1.00, 1],
+        "muted": [0.72, 0.67, 0.84, 1],
+        "background": [0.08, 0.06, 0.14, 1],
+        "surface": [0.14, 0.10, 0.23, 0.97],
+        "card": [0.21, 0.15, 0.32, 0.94],
+        "button": [0.39, 0.27, 0.64, 1],
+        "button_down": [0.27, 0.18, 0.46, 1],
+        "button_text": [0.98, 0.96, 1.00, 1],
+        "border": [0.76, 0.62, 1.00, 0.72],
+        "ring_track": [0.28, 0.20, 0.42, 1],
+    },
+]
+
+THEME_BY_ID = {theme["id"]: theme for theme in UI_THEMES}
+
+
 class AnimatedButton(Button):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if "background_color" not in kwargs:
+            self.background_color = [0.16, 0.40, 0.68, 1]
         self.halign = "center"
         self.valign = "middle"
         self.padding = [dp(6), dp(4)]
-        self.bind(size=self._update_text_size)
+        self.background_normal = ""
+        self.background_down = ""
+        self.background_disabled_normal = ""
+        self._button_border = [0.55, 0.60, 0.70, 0.65]
+        self.bind(
+            size=self._update_text_size,
+            pos=self._update_button_canvas,
+            background_color=self._update_button_canvas,
+            state=self._update_button_canvas
+        )
         self._update_text_size()
+        self._update_button_canvas()
 
     def _update_text_size(self, *args):
         self.text_size = (
             max(0, self.width - dp(12)),
             max(0, self.height - dp(8))
         )
+
+    def _update_button_canvas(self, *args):
+        self.canvas.before.clear()
+        fill = list(self.background_color)
+        if self.state == "down":
+            fill = [
+                max(0, channel * 0.78) if index < 3 else channel
+                for index, channel in enumerate(fill)
+            ]
+        with self.canvas.before:
+            Color(*fill)
+            RoundedRectangle(
+                pos=self.pos,
+                size=self.size,
+                radius=[dp(10)]
+            )
+            Color(*self._button_border)
+            Line(
+                rounded_rectangle=(
+                    self.x, self.y, self.width, self.height, dp(10)
+                ),
+                width=dp(0.8)
+            )
+
+    def set_theme_style(self, fill, text, border):
+        self.background_color = list(fill)
+        self.color = list(text)
+        self._button_border = list(border)
+        self._update_button_canvas()
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -272,6 +423,7 @@ class FocusBuddyApp(App):
 
     def load_user_data(self):
         default_theme = {
+            "theme_id": "classic",
             "primary": [0.2, 0.6, 1.0, 1],
             "text_color": [1.0, 1.0, 1.0, 1],
             "bg_type": "color",
@@ -281,7 +433,8 @@ class FocusBuddyApp(App):
         default = {
             "exp": 0, "streak": 0, "last_completed_date": "",
             "total_minutes": 0, "sessions_completed": 0, "history": [],
-            "theme": default_theme
+            "theme": default_theme,
+            "unlocked_themes": ["classic"]
         }
         data_path = self.data_file
 
@@ -303,12 +456,21 @@ class FocusBuddyApp(App):
                 data.setdefault("total_minutes", 0)
                 data.setdefault("sessions_completed", 0)
                 data.setdefault("history", [])
+                data.setdefault("unlocked_themes", ["classic"])
+                if not isinstance(data["unlocked_themes"], list):
+                    data["unlocked_themes"] = ["classic"]
+                if "classic" not in data["unlocked_themes"]:
+                    data["unlocked_themes"].insert(0, "classic")
                 
                 if "theme" not in data or isinstance(data["theme"], str):
                     data["theme"] = default_theme
                 else:
                     for k, v in default_theme.items():
                         data["theme"].setdefault(k, v)
+                    # Old custom palettes did not have a theme id. Keep
+                    # their colors working as a custom palette.
+                    if "theme_id" not in data["theme"]:
+                        data["theme"]["theme_id"] = "custom"
                 if data_path != self.data_file:
                     try:
                         os.makedirs(
@@ -386,11 +548,140 @@ class FocusBuddyApp(App):
             self._bg_rect.size = self.root_layout.size
 
 
+    def get_unlocked_theme_ids(self):
+        unlocked = self.user_data.get("unlocked_themes", ["classic"])
+        if not isinstance(unlocked, list):
+            unlocked = ["classic"]
+
+        # XP is the reward currency. Re-checking here also repairs saves
+        # created before the theme reward system existed.
+        for theme in UI_THEMES:
+            if (
+                self.user_data.get("exp", 0) >= theme["unlock_exp"]
+                and theme["id"] not in unlocked
+            ):
+                unlocked.append(theme["id"])
+
+        if "classic" not in unlocked:
+            unlocked.insert(0, "classic")
+        self.user_data["unlocked_themes"] = unlocked
+        return unlocked
+
+
+    def get_theme_by_id(self, theme_id):
+        return THEME_BY_ID.get(theme_id, THEME_BY_ID["classic"])
+
+
+    def get_active_palette(self):
+        saved_theme = self.user_data.get("theme", {})
+        theme_id = saved_theme.get("theme_id", "classic")
+
+        if theme_id in THEME_BY_ID:
+            return self.get_theme_by_id(theme_id)
+
+        # A custom palette is still supported for users who like tweaking
+        # the sliders, but it is separate from the earned UI themes.
+        primary = saved_theme.get("primary", [0.2, 0.6, 1.0, 1])
+        background = saved_theme.get("bg_color", [0.12, 0.14, 0.18, 1])
+        return {
+            "id": "custom",
+            "name": "Custom palette",
+            "primary": primary,
+            "text": saved_theme.get("text_color", [1, 1, 1, 1]),
+            "muted": [0.68, 0.72, 0.80, 1],
+            "background": background,
+            "surface": [0.12, 0.15, 0.22, 0.97],
+            "card": [0.20, 0.22, 0.28, 0.92],
+            "button": primary,
+            "button_down": [max(0, c * 0.75) for c in primary[:3]] + [1],
+            "button_text": [1, 1, 1, 1],
+            "border": primary,
+            "ring_track": [0.20, 0.22, 0.28, 1],
+        }
+
+
+    def _walk_widgets(self, widget):
+        yield widget
+        for child in widget.children:
+            yield from self._walk_widgets(child)
+
+
+    def _paint_surface(self, widget, color, radius=16):
+        if widget is None:
+            return
+
+        surface_color = list(color)
+        # Keep the user's wallpaper visible through the app surface.
+        if len(surface_color) > 3:
+            surface_color[3] = min(surface_color[3], 0.58)
+        widget.canvas.before.clear()
+        with widget.canvas.before:
+            Color(*surface_color)
+            RoundedRectangle(
+                pos=widget.pos,
+                size=widget.size,
+                radius=[dp(radius)]
+            )
+
+        if not getattr(widget, "_theme_surface_bound", False):
+            widget.bind(
+                pos=lambda inst, value: self._paint_surface(
+                    inst, self.get_active_palette()["surface"], radius
+                ),
+                size=lambda inst, value: self._paint_surface(
+                    inst, self.get_active_palette()["surface"], radius
+                )
+            )
+            widget._theme_surface_bound = True
+
+
+    def style_theme_widgets(self, palette):
+        for widget in self._walk_widgets(self.root_layout):
+            if isinstance(widget, AnimatedButton):
+                widget.set_theme_style(
+                    palette["button"],
+                    palette["button_text"],
+                    palette["border"]
+                )
+            elif isinstance(widget, TextInput):
+                widget.background_color = palette["card"]
+                widget.foreground_color = palette["text"]
+                widget.cursor_color = palette["primary"]
+            elif isinstance(widget, Label):
+                widget.color = palette["text"]
+            elif widget.__class__.__name__ == "TabbedPanelContent":
+                if hasattr(widget, "background_normal"):
+                    widget.background_normal = ""
+                if hasattr(widget, "background_color"):
+                    widget.background_color = [0, 0, 0, 0]
+
+        # The standard Kivy tab headers use a texture by default. Removing it
+        # lets the selected/unselected colors read as part of the theme.
+        for tab in self.panel.tab_list:
+            tab.background_normal = ""
+            tab.background_down = ""
+            tab.background_color = palette["card"]
+            tab.color = palette["text"]
+
+        self.panel.background_color = [0, 0, 0, 0]
+        self._paint_surface(
+            getattr(self, "focus_layout", None),
+            palette["surface"],
+            18
+        )
+        self._paint_surface(
+            getattr(self, "stats_layout", None),
+            palette["surface"],
+            18
+        )
+
+
     def apply_saved_theme(self):
         theme = self.user_data.get("theme", {})
 
         if isinstance(theme, str):
             theme = {
+                "theme_id": "classic",
                 "primary": [0.2, 0.6, 1.0, 1],
                 "text_color": [1.0, 1.0, 1.0, 1],
                 "bg_type": "color",
@@ -400,19 +691,24 @@ class FocusBuddyApp(App):
 
             self.user_data["theme"] = theme
 
-        primary = theme.get(
-            "primary",
-            [0.2, 0.6, 1.0, 1]
-        )
+        self.get_unlocked_theme_ids()
+        active_id = theme.get("theme_id", "classic")
+        if (
+            active_id not in THEME_BY_ID
+            and active_id != "custom"
+        ):
+            theme["theme_id"] = "classic"
 
-        text_col = theme.get(
-            "text_color",
-            [1.0, 1.0, 1.0, 1]
-        )
+        palette = self.get_active_palette()
+        primary = palette["primary"]
+        text_col = palette["text"]
+        theme["primary"] = list(primary)
+        theme["text_color"] = list(text_col)
+        theme["bg_color"] = list(palette["background"])
 
         self.ring_display.set_ring_colors(
             primary,
-            (0.2, 0.22, 0.26, 1)
+            palette["ring_track"]
         )
 
         self.ring_display.set_font_color(text_col)
@@ -455,6 +751,9 @@ class FocusBuddyApp(App):
         else:
             self._bg_color_instruction.rgba = bg_c
             self._update_background_rect()
+
+        self.style_theme_widgets(palette)
+        self.refresh_history_ui()
 
 
     def get_level_info(self):
@@ -678,25 +977,30 @@ class FocusBuddyApp(App):
         ):
             return
 
-        content = FloatLayout()
+        palette = self.get_active_palette()
+        content = BoxLayout(
+            orientation="vertical",
+            padding=[dp(18), dp(14)],
+            spacing=dp(7)
+        )
 
         with content.canvas.before:
-            Color(0.12, 0.14, 0.18, 0.98)
+            Color(*palette["surface"])
 
             self.rect = RoundedRectangle(
-                size=(dp(340), dp(220)),
-                pos=(0, 0),
+                pos=content.pos,
+                size=content.size,
                 radius=[dp(16)]
             )
 
-            Color(0.9, 0.25, 0.25, 1)
+            Color(*palette["primary"])
 
             self.border = Line(
                 rounded_rectangle=(
-                    0,
-                    0,
-                    dp(340),
-                    dp(220),
+                    content.x,
+                    content.y,
+                    content.width,
+                    content.height,
                     dp(16)
                 ),
                 width=dp(1.5)
@@ -718,17 +1022,11 @@ class FocusBuddyApp(App):
             size=update_rect
         )
 
-        card_box = BoxLayout(
-            orientation="vertical",
-            padding=[dp(18), dp(14)],
-            spacing=dp(7)
-        )
-
         icon_label = Label(
             text="!",
             font_size="26sp",
             bold=True,
-            color=[1, 0.35, 0.35, 1],
+            color=palette["primary"],
             size_hint_y=None,
             height=dp(32)
         )
@@ -737,7 +1035,7 @@ class FocusBuddyApp(App):
             text="Focus Shield Paused",
             font_size="18sp",
             bold=True,
-            color=[1, 1, 1, 1],
+            color=palette["text"],
             halign="center",
             valign="middle",
             size_hint_y=None,
@@ -752,7 +1050,7 @@ class FocusBuddyApp(App):
             font_size="13sp",
             halign="center",
             valign="middle",
-            color=[0.8, 0.8, 0.85, 1],
+            color=palette["muted"],
             size_hint_y=None,
             height=dp(58)
         )
@@ -773,11 +1071,9 @@ class FocusBuddyApp(App):
             )
         )
 
-        card_box.add_widget(icon_label)
-        card_box.add_widget(title_label)
-        card_box.add_widget(desc_label)
-
-        content.add_widget(card_box)
+        content.add_widget(icon_label)
+        content.add_widget(title_label)
+        content.add_widget(desc_label)
         content.opacity = 0
 
         self.interrupted_popup = Popup(
@@ -1228,6 +1524,7 @@ class FocusBuddyApp(App):
             exp_gained = mins_completed * 2
 
             self.user_data["exp"] += exp_gained
+            newly_unlocked = self.unlock_new_themes()
             self.user_data["total_minutes"] += mins_completed
             self.user_data["sessions_completed"] += 1
 
@@ -1274,6 +1571,101 @@ class FocusBuddyApp(App):
             self.apply_saved_theme()
             self.refresh_history_ui()
 
+            if newly_unlocked:
+                Clock.schedule_once(
+                    lambda dt: self.show_theme_unlock_popup(
+                        newly_unlocked
+                    ),
+                    0.15
+                )
+
+
+    def unlock_new_themes(self):
+        unlocked = self.user_data.setdefault(
+            "unlocked_themes",
+            ["classic"]
+        )
+        if not isinstance(unlocked, list):
+            unlocked = ["classic"]
+            self.user_data["unlocked_themes"] = unlocked
+
+        newly_unlocked = []
+        current_exp = self.user_data.get("exp", 0)
+        for theme in UI_THEMES:
+            if (
+                current_exp >= theme["unlock_exp"]
+                and theme["id"] not in unlocked
+            ):
+                unlocked.append(theme["id"])
+                newly_unlocked.append(theme)
+
+        return newly_unlocked
+
+
+    def show_theme_unlock_popup(self, themes):
+        if not themes:
+            return
+
+        palette = self.get_active_palette()
+        content = BoxLayout(
+            orientation="vertical",
+            padding=[dp(18), dp(14)],
+            spacing=dp(8)
+        )
+
+        title = Label(
+            text="✦ New UI theme unlocked",
+            font_size="18sp",
+            bold=True,
+            color=palette["text"],
+            size_hint_y=None,
+            height=dp(34)
+        )
+        content.add_widget(title)
+
+        for theme in themes:
+            reward = Label(
+                text=f"🎨 {theme['name']}\n{theme['description']}",
+                font_size="13sp",
+                halign="center",
+                valign="middle",
+                color=palette["primary"],
+                size_hint_y=None,
+                height=dp(48)
+            )
+            reward.bind(size=reward.setter("text_size"))
+            content.add_widget(reward)
+
+        close_btn = AnimatedButton(
+            text="Open Theme Collection",
+            font_size="13sp",
+            bold=True,
+            size_hint_y=None,
+            height=dp(42)
+        )
+        close_btn.set_theme_style(
+            palette["button"],
+            palette["button_text"],
+            palette["border"]
+        )
+
+        popup = Popup(
+            title="",
+            separator_height=0,
+            content=content,
+            size_hint=(0.88, None),
+            height=dp(250),
+            auto_dismiss=True
+        )
+
+        def open_collection(instance):
+            popup.dismiss()
+            self.open_color_picker_popup(instance)
+
+        close_btn.bind(on_release=open_collection)
+        content.add_widget(close_btn)
+        popup.open()
+
 
     def update_timer_label(self, total_sec):
         hrs = total_sec // 3600
@@ -1305,10 +1697,7 @@ class FocusBuddyApp(App):
             )
 
             self.btn_break_toggle.background_color = [
-                0.2,
-                0.6,
-                1.0,
-                1
+                *self.get_active_palette()["primary"]
             ]
 
         else:
@@ -1321,10 +1710,7 @@ class FocusBuddyApp(App):
                 )
 
             self.btn_break_toggle.background_color = [
-                0.3,
-                0.3,
-                0.35,
-                1
+                *self.get_active_palette()["button"]
             ]
 
 
@@ -1424,20 +1810,14 @@ class FocusBuddyApp(App):
         if self.shield_enabled:
             self.shield_btn.text = "Shield: ON"
             self.shield_btn.background_color = [
-                0.2,
-                0.6,
-                1.0,
-                1
+                *self.get_active_palette()["primary"]
             ]
 
         else:
             self.shield_btn.text = "Shield: OFF"
             self.timer_paused_by_shield = False
             self.shield_btn.background_color = [
-                0.4,
-                0.4,
-                0.4,
-                1
+                *self.get_active_palette()["button_down"]
             ]
 
         self.dismiss_interrupted_popup()
@@ -1460,6 +1840,21 @@ class FocusBuddyApp(App):
 
     def get_stats_text(self):
         lvl, exp = self.get_level_info()
+        unlocked_count = len(self.get_unlocked_theme_ids())
+        locked_themes = [
+            theme for theme in UI_THEMES
+            if theme["id"] not in self.user_data["unlocked_themes"]
+        ]
+
+        if locked_themes:
+            next_theme = locked_themes[0]
+            reward_line = (
+                f"Themes: {unlocked_count}/{len(UI_THEMES)} • "
+                f"Next: {next_theme['name']} at "
+                f"{next_theme['unlock_exp']} XP"
+            )
+        else:
+            reward_line = "Themes: All earned ✦"
 
         return (
             f"Level {lvl} | Total XP: "
@@ -1467,7 +1862,8 @@ class FocusBuddyApp(App):
             f"Sessions: "
             f"{self.user_data['sessions_completed']} | "
             f"Total Time: "
-            f"{self.user_data['total_minutes']} mins"
+            f"{self.user_data['total_minutes']} mins\n"
+            f"{reward_line}"
         )
 
 
@@ -1484,7 +1880,7 @@ class FocusBuddyApp(App):
             empty_lbl = Label(
                 text="No completed sessions yet.",
                 font_size="12sp",
-                color=[0.7, 0.7, 0.7, 1],
+                color=self.get_active_palette()["muted"],
                 size_hint_y=None,
                 height=dp(30)
             )
@@ -1505,17 +1901,12 @@ class FocusBuddyApp(App):
             )
 
             with item_box.canvas.before:
-                Color(
-                    0.2,
-                    0.22,
-                    0.28,
-                    0.6
-                )
+                Color(*self.get_active_palette()["card"])
 
                 RoundedRectangle(
                     pos=item_box.pos,
                     size=item_box.size,
-                    radius=[6]
+                    radius=[dp(10)]
                 )
 
             item_box.bind(
@@ -1564,7 +1955,7 @@ class FocusBuddyApp(App):
             lbl_sub = Label(
                 text=f"📅 {date_str}{audio_str}",
                 font_size="9sp",
-                color=[0.75, 0.8, 0.85, 1],
+                color=self.get_active_palette()["muted"],
                 halign="left",
                 size_hint_y=0.5
             )
@@ -1585,17 +1976,12 @@ class FocusBuddyApp(App):
         instance.canvas.before.clear()
 
         with instance.canvas.before:
-            Color(
-                0.2,
-                0.22,
-                0.28,
-                0.6
-            )
+            Color(*self.get_active_palette()["card"])
 
             RoundedRectangle(
                 pos=instance.pos,
                 size=instance.size,
-                radius=[6]
+                radius=[dp(10)]
             )
 
 
@@ -1609,6 +1995,7 @@ class FocusBuddyApp(App):
             padding=10,
             spacing=8
         )
+        self.stats_layout = layout
 
         self.stats_summary.text = (
             self.get_stats_text()
@@ -1672,8 +2059,127 @@ class FocusBuddyApp(App):
         content = BoxLayout(
             orientation="vertical",
             padding=12,
-            spacing=10
+            spacing=10,
+            size_hint_y=None
         )
+        content.bind(
+            minimum_height=content.setter("height")
+        )
+
+        scroll = ScrollView(
+            do_scroll_x=False
+        )
+        scroll.add_widget(content)
+
+        theme_title = Label(
+            text="🏆 Reward UI Themes",
+            font_size="14sp",
+            bold=True,
+            color=self.get_active_palette()["primary"],
+            size_hint_y=None,
+            height=dp(24)
+        )
+        content.add_widget(theme_title)
+
+        theme_hint = Label(
+            text=(
+                "Complete focus sessions to earn new designs. "
+                "Themes change the whole interface—not the background."
+            ),
+            font_size="10sp",
+            color=self.get_active_palette()["muted"],
+            halign="left",
+            valign="middle",
+            size_hint_y=None,
+            height=dp(52)
+        )
+        theme_hint.bind(
+            width=lambda label, value: setattr(
+                label,
+                "text_size",
+                (value, None)
+            )
+        )
+        content.add_widget(theme_hint)
+
+        theme_grid = GridLayout(
+            cols=2,
+            spacing=dp(7),
+            size_hint_y=None
+        )
+        theme_grid.bind(
+            minimum_height=theme_grid.setter("height")
+        )
+        content.add_widget(theme_grid)
+
+        def select_theme(theme_id):
+            if theme_id != "custom" and theme_id not in self.get_unlocked_theme_ids():
+                return
+
+            self.user_data["theme"]["theme_id"] = theme_id
+            self.apply_saved_theme()
+            self.save_user_data()
+            render_theme_cards()
+
+        def render_theme_cards():
+            theme_grid.clear_widgets()
+            selected_id = self.user_data["theme"].get(
+                "theme_id",
+                "classic"
+            )
+            unlocked_ids = self.get_unlocked_theme_ids()
+            available_cards = [
+                {
+                    "id": "custom",
+                    "name": "Custom palette",
+                    "description": "Your slider colors",
+                    "unlock_exp": 0
+                }
+            ] + UI_THEMES
+
+            for theme in available_cards:
+                is_unlocked = (
+                    theme["id"] == "custom"
+                    or theme["id"] in unlocked_ids
+                )
+                is_selected = theme["id"] == selected_id
+                if is_selected:
+                    prefix = "✓ "
+                elif is_unlocked:
+                    prefix = "◆ "
+                else:
+                    prefix = "🔒 "
+
+                if is_unlocked:
+                    subtitle = theme["description"]
+                else:
+                    subtitle = f"Unlock at {theme['unlock_exp']} XP"
+
+                theme_btn = AnimatedButton(
+                    text=f"{prefix}{theme['name']}\n{subtitle}",
+                    font_size="10sp",
+                    bold=is_selected,
+                    size_hint_y=None,
+                    height=dp(60),
+                    disabled=not is_unlocked
+                )
+                card_palette = (
+                    self.get_theme_by_id(theme["id"])
+                    if theme["id"] in THEME_BY_ID
+                    else self.get_active_palette()
+                )
+                theme_btn.set_theme_style(
+                    card_palette["button"],
+                    card_palette["button_text"],
+                    card_palette["border"]
+                )
+                theme_btn.bind(
+                    on_release=lambda btn, theme_id=theme["id"]:
+                    select_theme(theme_id)
+                )
+                theme_grid.add_widget(theme_btn)
+
+        render_theme_cards()
 
         content.add_widget(
             Label(
@@ -1725,6 +2231,7 @@ class FocusBuddyApp(App):
                 new_col
             )
 
+            self.user_data["theme"]["theme_id"] = "custom"
             self.user_data["theme"]["primary"] = new_col
             self.apply_saved_theme()
             self.save_user_data()
@@ -1795,6 +2302,7 @@ class FocusBuddyApp(App):
                 new_col
             )
 
+            self.user_data["theme"]["theme_id"] = "custom"
             self.user_data["theme"]["text_color"] = new_col
             self.apply_saved_theme()
             self.save_user_data()
@@ -1817,7 +2325,7 @@ class FocusBuddyApp(App):
 
         content.add_widget(
             Label(
-                text="Background Picture",
+                text="Optional Personal Background",
                 font_size="12sp",
                 bold=True,
                 size_hint_y=None,
@@ -1833,14 +2341,24 @@ class FocusBuddyApp(App):
         )
 
         btn_gallery = AnimatedButton(
-            text="🖼️ Gallery / Images",
+            text="🖼️ Choose Image",
             font_size="11sp",
             bold=True
         )
+        btn_gallery.set_theme_style(
+            self.get_active_palette()["button"],
+            self.get_active_palette()["button_text"],
+            self.get_active_palette()["border"]
+        )
 
         btn_clear_bg = AnimatedButton(
-            text="Clear Image",
+            text="Use Theme Color",
             font_size="11sp"
+        )
+        btn_clear_bg.set_theme_style(
+            self.get_active_palette()["button"],
+            self.get_active_palette()["button_text"],
+            self.get_active_palette()["border"]
         )
 
         def choose_custom_bg(inst):
@@ -1883,8 +2401,8 @@ class FocusBuddyApp(App):
 
         popup = Popup(
             title="Appearance Customizer",
-            content=content,
-            size_hint=(0.9, 0.65)
+            content=scroll,
+            size_hint=(0.94, 0.88)
         )
 
         popup.open()
